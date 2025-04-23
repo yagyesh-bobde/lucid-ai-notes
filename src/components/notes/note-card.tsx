@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Edit, Trash } from "lucide-react"
@@ -47,6 +47,8 @@ interface NoteCardProps {
   note: Note
   onEdit: (note: Note) => void
   onDelete: (id: string) => void
+  isSelected?: boolean
+  onSheetClose?: () => void
 }
 
 import { 
@@ -56,11 +58,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 
-export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
+export function NoteCard({ note, onEdit, onDelete, isSelected, onSheetClose }: NoteCardProps) {
   const [showSummary, setShowSummary] = useState(!!note.summary)
   const [localSummary, setLocalSummary] = useState<string | null>(note.summary)
   const [isSummarizing, setIsSummarizing] = useState(false)
-  const [isReadViewOpen, setIsReadViewOpen] = useState(false)
+  const [isReadViewOpen, setIsReadViewOpen] = useState(isSelected)
   const saveSummaryMutation = useSaveSummary()
   const queryClient = useQueryClient()
   
@@ -133,6 +135,17 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
     }
   }
 
+  // Update sheet state when isSelected changes
+  useEffect(() => {
+    setIsReadViewOpen(isSelected)
+  }, [isSelected])
+
+  // Handle sheet close
+  const handleSheetClose = () => {
+    setIsReadViewOpen(false)
+    onSheetClose?.()
+  }
+
   return (
     <>
       <Card 
@@ -145,6 +158,10 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
           ) {
             return
           }
+          // Update URL when clicking the card
+          const url = new URL(window.location.href)
+          url.searchParams.set('note', note.id)
+          window.history.pushState({}, '', url.toString())
           setIsReadViewOpen(true)
         }}
       >
@@ -213,7 +230,7 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
       </Card>
 
       {/* Read-only View Sheet */}
-      <Sheet open={isReadViewOpen} onOpenChange={setIsReadViewOpen}>
+      <Sheet open={isReadViewOpen} onOpenChange={handleSheetClose}>
         <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto">
           <SheetHeader className="mb-6">
             <SheetTitle className="text-2xl">{note.title}</SheetTitle>

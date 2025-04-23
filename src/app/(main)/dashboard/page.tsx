@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter, useSearchParams } from "next/navigation"
 import React, { useState, useEffect } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -19,7 +20,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton"
-import Tiptap from "@/components/TipTap"
 
 export default function DashboardPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -30,11 +30,32 @@ export default function DashboardPage() {
   const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create')
   const [showDeleteAnimation, setShowDeleteAnimation] = useState(false)
   const [noteIdToAnimate, setNoteIdToAnimate] = useState<string | null>(null)
-  
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null)
+
   // Using the custom hooks for data fetching and mutations
   const { data: notes = [], isLoading, refetch } = useNotes()
   const deleteNoteMutation = useDeleteNote()
   const queryClient = useQueryClient()
+
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const noteParam = searchParams.get('note')
+
+  // Handle URL-based note opening
+  useEffect(() => {
+    if (noteParam) {
+      setSelectedNoteId(noteParam)
+    }
+  }, [noteParam])
+
+  // Handle sheet close
+  const handleSheetClose = () => {
+    setSelectedNoteId(null)
+    // Remove the note query parameter
+    const url = new URL(window.location.href)
+    url.searchParams.delete('note')
+    router.replace(url.pathname)
+  }
   
   // Open the editor to create a new note
   const openCreateEditor = () => {
@@ -186,7 +207,7 @@ export default function DashboardPage() {
               key={note.id}
               className={`transition-all duration-300 ${
                 showDeleteAnimation && noteIdToAnimate === note.id
-                  ? 'scale-0 opacity-0'
+                  ? 'scale-95 opacity-0'
                   : 'scale-100 opacity-100'
               }`}
             >
@@ -194,6 +215,8 @@ export default function DashboardPage() {
                 note={note}
                 onEdit={openEditEditor}
                 onDelete={confirmDelete}
+                isSelected={selectedNoteId === note.id}
+                onSheetClose={handleSheetClose}
               />
             </div>
           ))}
