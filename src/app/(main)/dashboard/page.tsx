@@ -1,13 +1,13 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { PlusIcon, SearchIcon, RefreshCw } from "lucide-react"
 import { NoteCard } from "@/components/notes/note-card"
 import { NoteEditorRich } from "@/components/notes/note-editor"
 import { Note } from "@/lib/supabase/types"
-import { useNotes, useDeleteNote } from "@/hooks/use-notes"
+import { useNotes, useDeleteNote, useQueryClient, noteKeys } from "@/hooks/use-notes"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,10 +27,13 @@ export default function DashboardPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null)
   const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create')
+  const [showDeleteAnimation, setShowDeleteAnimation] = useState(false)
+  const [noteIdToAnimate, setNoteIdToAnimate] = useState<string | null>(null)
   
   // Using the custom hooks for data fetching and mutations
   const { data: notes = [], isLoading, refetch } = useNotes()
   const deleteNoteMutation = useDeleteNote()
+  const queryClient = useQueryClient()
   
   // Open the editor to create a new note
   const openCreateEditor = () => {
@@ -52,17 +55,40 @@ export default function DashboardPage() {
     setIsDeleteDialogOpen(true)
   }
   
-  // Handle note deletion
+  // Handle note deletion with animation
   const handleDeleteNote = async () => {
     if (!noteToDelete) return
     
     try {
-      await deleteNoteMutation.mutateAsync(noteToDelete)
+      // Start delete animation
+      setNoteIdToAnimate(noteToDelete)
+      setShowDeleteAnimation(true)
+      
+      // Optimistically update the UI by removing the note from the list
+      queryClient.setQueriesData(
+        { queryKey: noteKeys.lists() },
+        (oldData: any) => {
+          if (!oldData) return oldData
+          return oldData.filter((note: Note) => note.id !== noteToDelete)
+        }
+      )
+      
+      // Close dialog immediately
       setIsDeleteDialogOpen(false)
+      
+      // Actually delete the note
+      await deleteNoteMutation.mutateAsync(noteToDelete)
+      
+      // Clear delete state
       setNoteToDelete(null)
     } catch (error) {
       console.error("Error deleting note:", error)
-      // Error is handled by the mutation
+      // If error occurs, revert the optimistic update by refetching
+      refetch()
+    } finally {
+      // End animation
+      setShowDeleteAnimation(false)
+      setNoteIdToAnimate(null)
     }
   }
   
@@ -155,12 +181,20 @@ export default function DashboardPage() {
       {!isLoading && filteredNotes.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredNotes.map(note => (
-            <NoteCard
+            <div
               key={note.id}
-              note={note}
-              onEdit={openEditEditor}
-              onDelete={confirmDelete}
-            />
+              className={`transition-all duration-300 ${
+                showDeleteAnimation && noteIdToAnimate === note.id
+                  ? 'scale-0 opacity-0'
+                  : 'scale-100 opacity-100'
+              }`}
+            >
+              <NoteCard
+                note={note}
+                onEdit={openEditEditor}
+                onDelete={confirmDelete}
+              />
+            </div>
           ))}
         </div>
       )}

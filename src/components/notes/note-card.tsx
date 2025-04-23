@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Edit, Trash } from "lucide-react"
 import { Note } from "@/lib/supabase/types"
 import { summarizeText } from "@/lib/gemini/client"
-import { useSaveSummary } from "@/hooks/use-notes"
+import { useSaveSummary, useQueryClient, noteKeys } from "@/hooks/use-notes"
 
 // Define the formatRelativeTime function
 const formatRelativeTime = (date: Date): string => {
@@ -51,7 +51,10 @@ interface NoteCardProps {
 
 export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
   const [showSummary, setShowSummary] = useState(!!note.summary)
+  const [localSummary, setLocalSummary] = useState<string | null>(note.summary)
+  const [isSummarizing, setIsSummarizing] = useState(false)
   const saveSummaryMutation = useSaveSummary()
+  const queryClient = useQueryClient()
   
   // Format the date for display
   const getFormattedDate = (dateString: string) => {
@@ -63,13 +66,15 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
   }
 
   const handleSummarize = async () => {
-    if (saveSummaryMutation.isPending) return
+    if (isSummarizing) return
     
     // If we already have a saved summary, just display it
-    if (note.summary) {
+    if (localSummary) {
       setShowSummary(true)
       return
     }
+    
+    setIsSummarizing(true)
     
     try {
       // Generate a new summary using Gemini
@@ -79,16 +84,39 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
         throw new Error(result.error)
       }
       
-      // Save the generated summary to the database using our mutation
+      // Update local state immediately to show the summary
+      setLocalSummary(result.summary)
+      setShowSummary(true)
+      
+      // Save the generated summary to the database
       await saveSummaryMutation.mutateAsync({
         noteId: note.id,
         summary: result.summary
+      }, {
+        onSuccess: () => {
+          // Update the cache with the new summary
+          queryClient.setQueryData(
+            noteKeys.detail(note.id),
+            { ...note, summary: result.summary }
+          )
+          
+          // Also update the note in the list cache
+          queryClient.setQueriesData(
+            { queryKey: noteKeys.lists() },
+            (oldData: any) => {
+              if (!oldData) return oldData
+              return oldData.map((n: Note) => 
+                n.id === note.id ? { ...n, summary: result.summary } : n
+              )
+            }
+          )
+        }
       })
-      
-      setShowSummary(true)
     } catch (error) {
       console.error("Error summarizing note:", error)
       // Error is handled by the mutation
+    } finally {
+      setIsSummarizing(false)
     }
   }
 
@@ -113,11 +141,11 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
         </div>
       </CardHeader>
       <CardContent className="flex-1">
-        {showSummary && note.summary ? (
+        {showSummary && localSummary ? (
           <div className="space-y-4">
             <div className="bg-secondary/50 p-3 rounded-md">
               <h4 className="font-medium text-sm mb-1">AI Summary</h4>
-              <p className="text-sm">{note.summary}</p>
+              <p className="text-sm">{localSummary}</p>
             </div>
             <Button variant="outline" size="sm" onClick={() => setShowSummary(false)}>
               Show Original
@@ -134,12 +162,12 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
             variant="outline" 
             size="sm" 
             onClick={handleSummarize} 
-            disabled={saveSummaryMutation.isPending}
+            disabled={isSummarizing}
           >
-            {saveSummaryMutation.isPending ? "Summarizing..." : note.summary ? "Show Summary" : "Summarize"}
+            {isSummarizing ? "Summarizing..." : localSummary ? "Show Summary" : "Summarize"}
           </Button>
         )}
       </CardFooter>
     </Card>
   )
-}
+  }

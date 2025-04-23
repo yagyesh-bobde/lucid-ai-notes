@@ -78,8 +78,16 @@ export function useCreateNote() {
       
       return note
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: noteKeys.lists() })
+    onSuccess: (newNote) => {
+      // Update the notes list cache immediately with the new note
+      queryClient.setQueriesData(
+        { queryKey: noteKeys.lists() },
+        (oldData: any) => {
+          if (!oldData) return [newNote]
+          return [newNote, ...oldData]
+        }
+      )
+      
       toast.success("Note created successfully")
     },
     onError: (error) => {
@@ -102,9 +110,24 @@ export function useUpdateNote() {
       
       return note
     },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: noteKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: noteKeys.detail(variables.id) })
+    onSuccess: (updatedNote, variables) => {
+      // Update the specific note in the cache
+      queryClient.setQueryData(
+        noteKeys.detail(variables.id),
+        updatedNote
+      )
+      
+      // Also update the note in the list cache
+      queryClient.setQueriesData(
+        { queryKey: noteKeys.lists() },
+        (oldData: any) => {
+          if (!oldData) return oldData
+          return oldData.map((note: Note) => 
+            note.id === variables.id ? updatedNote : note
+          )
+        }
+      )
+      
       toast.success("Note updated successfully")
     },
     onError: (error) => {
@@ -128,8 +151,18 @@ export function useDeleteNote() {
       return id
     },
     onSuccess: (id) => {
-      queryClient.invalidateQueries({ queryKey: noteKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: noteKeys.detail(id) })
+      // Remove the deleted note from the list cache immediately
+      queryClient.setQueriesData(
+        { queryKey: noteKeys.lists() },
+        (oldData: any) => {
+          if (!oldData) return oldData
+          return oldData.filter((note: Note) => note.id !== id)
+        }
+      )
+      
+      // Also remove it from the detail cache if it exists
+      queryClient.removeQueries({ queryKey: noteKeys.detail(id) })
+      
       toast.success("Note deleted successfully")
     },
     onError: (error) => {
@@ -153,11 +186,34 @@ export function useSaveSummary() {
       return { noteId, summary }
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: noteKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: noteKeys.detail(data.noteId) })
+      // Update the summary in both the detail and list caches
+      const { noteId, summary } = data
+      
+      // Update the specific note
+      queryClient.setQueriesData(
+        { queryKey: noteKeys.detail(noteId) },
+        (oldData: any) => {
+          if (!oldData) return oldData
+          return { ...oldData, summary }
+        }
+      )
+      
+      // Update the note in the list
+      queryClient.setQueriesData(
+        { queryKey: noteKeys.lists() },
+        (oldData: any) => {
+          if (!oldData) return oldData
+          return oldData.map((note: Note) => 
+            note.id === noteId ? { ...note, summary } : note
+          )
+        }
+      )
     },
     onError: (error) => {
       toast.error(`Failed to save summary: ${error.message}`)
     },
   })
 }
+
+// Export queryClient for direct access
+export { useQueryClient }
