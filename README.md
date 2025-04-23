@@ -5,6 +5,16 @@
 LucidNote is a modern note-taking application that combines rich text editing with AI-powered summarization capabilities. It helps users organize thoughts, create summaries, and collaborate visually through an interactive canvas.
 
 ## ✨ Features
+- [x] Initialize Github repo
+- [x] Brainstorm features
+- [x] Add authentication
+- [x] Add supabase database
+- [x] Notes Feature 
+    - [x] Add notes
+    - [x] CRUD Notes
+    - [x] Add Gemini AI integration - AI summaries
+- [x] Add AI Study Feature
+- [x] Deploy to Vercel
 
 ### 📝 Smart Notes
 - Create, edit, and organize notes in a clean, modern interface
@@ -15,13 +25,6 @@ LucidNote is a modern note-taking application that combines rich text editing wi
 - Automatically generate concise summaries of your notes using Google's Gemini AI
 - Toggle between full notes and summaries with a single click
 - Save time by getting key points instantly
-
-### 🎨 Ideation Canvas
-- Visual brainstorming tool for creativity and planning
-- Create sticky notes, shapes, and text elements
-- Draw freehand to sketch ideas
-- Move and organize elements freely
-- No database persistence - perfect for quick ideation sessions
 
 ### 👤 User Authentication
 - Secure authentication with email/password
