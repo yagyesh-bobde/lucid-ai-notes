@@ -269,7 +269,7 @@ export function NoteEditorRich({ isOpen, onClose, onSuccess, note, mode }: NoteE
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-[95%] sm:w-[90%] md:w-[85%] lg:w-[75%] xl:w-[65%] max-w-4xl p-0 flex flex-col">
+      <SheetContent side="bottom" className="rounded-t-xl mx-auto h-6/7 w-full md:w-3/5 flex flex-col">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col h-full">
             <SheetHeader className="px-6 py-4 border-b">
