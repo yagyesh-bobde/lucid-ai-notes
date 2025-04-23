@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { SidebarProvider } from '@/components/ui/sidebar'
+import { MainSidebar } from '@/components/layout/Sidebar'
 
 export default async function MainLayout({
   children,
@@ -15,10 +17,13 @@ export default async function MainLayout({
   }
   
   return (
+    <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <main className="flex-1 md:p-12 p-4 overflow-y-auto bg-background">
+        <MainSidebar />
+        <main className="flex-1 md:p-12 p-4 md:pl-54 overflow-y-auto bg-background">
           {children}
         </main>
       </div>
+    </SidebarProvider>
   )
 }

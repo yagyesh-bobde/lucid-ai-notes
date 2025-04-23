@@ -4,6 +4,7 @@ import '@/app/globals.css'
 
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster as SonnerToaster } from '@/components/ui/sonner'
+import { QueryProvider } from '@/components/providers/query-provider'
 
 // Load Inter font
 const inter = Inter({ subsets: ['latin'] })
@@ -29,8 +30,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <SonnerToaster />
+          <QueryProvider>
+            {children}
+            <SonnerToaster />
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

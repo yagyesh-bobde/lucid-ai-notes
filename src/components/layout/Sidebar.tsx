@@ -1,13 +1,18 @@
-// src/components/layout/sidebar.tsx
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LogOut, StickyNote, Brush } from "lucide-react"
+import { 
+  LogOut, 
+  StickyNote, 
+  Brush, 
+  ChevronDown,
+  Clock
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
-  Sidebar as SidebarComponent,
+  Sidebar,
   SidebarContent,
   SidebarHeader,
   SidebarFooter,
@@ -17,47 +22,28 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger
 } from "@/components/ui/sidebar"
-import { signOut } from "@/lib/supabase/actions"
-import { createClient } from "@/lib/supabase/client"
-import { useEffect, useState } from "react"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useNotes } from "@/hooks/use-notes"
+import { useUser, useProfile, useAuth } from "@/hooks/use-auth"
 
-interface Profile {
-  username: string | null
-  avatar_url: string | null
-}
-
-// Sidebar component with navigation and user profile
-export function AppSidebar() {
+export function MainSidebar() {
   const pathname = usePathname()
-  const [user, setUser] = useState<any | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const { data: user, isLoading: isUserLoading } = useUser()
+  const { data: profile, isLoading: isProfileLoading } = useProfile()
+  const { data: notes = [], isLoading: isNotesLoading } = useNotes()
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const { signOut } = useAuth()
 
-  // Fetch user and profile info
-  useEffect(() => {
-    const fetchUserAndProfile = async () => {
-      const supabase = createClient()
-      
-      // Get user session
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        setUser(session.user)
-        
-        // Fetch profile data if user is authenticated
-        const { data } = await supabase
-          .from("profiles")
-          .select("username, avatar_url")
-          .eq("id", session.user.id)
-          .single()
-        
-        setProfile(data)
-      }
-    }
-    
-    fetchUserAndProfile()
-  }, [])
+  // Get 5 most recent notes
+  const recentNotes = notes.slice(0, 5)
 
   // Handle sign out
   const handleSignOut = async () => {
@@ -70,19 +56,49 @@ export function AppSidebar() {
     }
   }
 
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (profile?.username) {
+      return profile.username.substring(0, 2).toUpperCase()
+    }
+    if (user?.email) {
+      return user.email.substring(0, 2).toUpperCase()
+    }
+    return "UN"
+  }
+
   return (
-    <SidebarComponent variant="inset" collapsible="icon">
+    <Sidebar className="lg:w-[200px]">
       <SidebarHeader>
-        <div className="flex flex-col justify-center items-center py-6">
-          <img
-            src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.username || user?.email || "U"}`}
-            alt="avatar"
-            className="w-16 h-16 rounded-full object-cover mb-2 border-2 border-primary animate-float-bubble"
-          />
-          <span className="font-semibold truncate max-w-[160px]">{profile?.username || user?.email}</span>
-          <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
+        <div className="flex flex-col items-center py-6 px-2">
+          <Avatar className="h-16 w-16 mb-2">
+            <AvatarImage src={profile?.avatar_url || ""} />
+            <AvatarFallback className="text-lg bg-primary text-primary-foreground">
+              {isUserLoading || isProfileLoading ? (
+                <Skeleton className="h-full w-full rounded-full" />
+              ) : (
+                getUserInitials()
+              )}
+            </AvatarFallback>
+          </Avatar>
+          <div className="text-center">
+            {isUserLoading || isProfileLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24 mx-auto" />
+                <Skeleton className="h-3 w-32 mx-auto" />
+              </div>
+            ) : (
+              <>
+                
+                <p className="text-xs text-muted-foreground truncate max-w-[160px]">
+                  {user?.email || ""}
+                </p>
+              </>
+            )}
+          </div>
         </div>
       </SidebarHeader>
+      
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
@@ -95,7 +111,7 @@ export function AppSidebar() {
                   tooltip="Notes"
                 >
                   <Link href="/dashboard">
-                    <StickyNote className="mr-2" />
+                    <StickyNote className="mr-2 h-4 w-4" />
                     Notes
                   </Link>
                 </SidebarMenuButton>
@@ -107,7 +123,7 @@ export function AppSidebar() {
                   tooltip="Canvas"
                 >
                   <Link href="/canvas">
-                    <Brush className="mr-2" />
+                    <Brush className="mr-2 h-4 w-4" />
                     Canvas
                   </Link>
                 </SidebarMenuButton>
@@ -115,19 +131,59 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        
+        <SidebarGroup>
+          <SidebarGroupLabel>Recent Notes</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="recent-notes" className="border-none">
+                <AccordionTrigger className="py-2 px-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md">
+                  <div className="flex items-center">
+                    <Clock className="mr-2 h-4 w-4" />
+                    Recent Notes
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  {isNotesLoading ? (
+                    <div className="space-y-2 px-2 py-1">
+                      {[...Array(3)].map((_, i) => (
+                        <Skeleton key={i} className="h-8 w-full" />
+                      ))}
+                    </div>
+                  ) : recentNotes.length > 0 ? (
+                    <div className="space-y-1 px-2 py-1 pl-6 text-sidebar-foreground/80">
+                      {recentNotes.map((note) => (
+                        <Link 
+                          key={note.id} 
+                          href={`/dashboard?note=${note.id}`}
+                          className="block text-sm py-1.5 px-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground truncate"
+                        >
+                          {note.title}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground px-4 py-2">
+                      No recent notes found
+                    </p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="flex flex-col gap-2 mb-2">
+      
+      <SidebarFooter className="p-4">
         <Button
-          variant="destructive"
-          className="w-full"
+          className="w-full cursor-pointer"
           onClick={handleSignOut}
           disabled={isSigningOut}
-          aria-label="Sign Out"
         >
-          <LogOut className="mr-2 w-4 h-4" />
+          <LogOut className="mr-2 h-4 w-4" />
           {isSigningOut ? "Signing out..." : "Sign Out"}
         </Button>
       </SidebarFooter>
-    </SidebarComponent>
+    </Sidebar>
   )
 }

@@ -1,16 +1,14 @@
 "use client"
 
 import React, { useState } from "react"
-// Remove the import for formatRelativeTime since we'll define it in this file
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "sonner"
 import { Edit, Trash } from "lucide-react"
 import { Note } from "@/lib/supabase/types"
 import { summarizeText } from "@/lib/gemini/client"
-import { saveSummary } from "@/lib/supabase/actions"
+import { useSaveSummary } from "@/hooks/use-notes"
 
-// Define the formatRelativeTime function here
+// Define the formatRelativeTime function
 const formatRelativeTime = (date: Date): string => {
   const now = new Date()
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
@@ -49,12 +47,11 @@ interface NoteCardProps {
   note: Note
   onEdit: (note: Note) => void
   onDelete: (id: string) => void
-  onRefresh: () => void
 }
 
-export function NoteCard({ note, onEdit, onDelete, onRefresh }: NoteCardProps) {
-  const [isSummarizing, setIsSummarizing] = useState(false)
+export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
   const [showSummary, setShowSummary] = useState(!!note.summary)
+  const saveSummaryMutation = useSaveSummary()
   
   // Format the date for display
   const getFormattedDate = (dateString: string) => {
@@ -66,16 +63,15 @@ export function NoteCard({ note, onEdit, onDelete, onRefresh }: NoteCardProps) {
   }
 
   const handleSummarize = async () => {
-    if (isSummarizing) return
+    if (saveSummaryMutation.isPending) return
     
-    setIsSummarizing(true)
+    // If we already have a saved summary, just display it
+    if (note.summary) {
+      setShowSummary(true)
+      return
+    }
+    
     try {
-      // If we already have a saved summary, just display it
-      if (note.summary) {
-        setShowSummary(true)
-        return
-      }
-      
       // Generate a new summary using Gemini
       const result = await summarizeText(note.content, { maxLength: 75 })
       
@@ -83,22 +79,16 @@ export function NoteCard({ note, onEdit, onDelete, onRefresh }: NoteCardProps) {
         throw new Error(result.error)
       }
       
-      // Save the generated summary to the database
-      const { error } = await saveSummary(note.id, result.summary)
+      // Save the generated summary to the database using our mutation
+      await saveSummaryMutation.mutateAsync({
+        noteId: note.id,
+        summary: result.summary
+      })
       
-      if (error) {
-        throw new Error(error.message)
-      }
-      
-      // If successful, refresh the note list to get the updated note with summary
-      onRefresh()
       setShowSummary(true)
-      
     } catch (error) {
       console.error("Error summarizing note:", error)
-      toast.error("Failed to generate summary. Please try again.")
-    } finally {
-      setIsSummarizing(false)
+      // Error is handled by the mutation
     }
   }
 
@@ -144,9 +134,9 @@ export function NoteCard({ note, onEdit, onDelete, onRefresh }: NoteCardProps) {
             variant="outline" 
             size="sm" 
             onClick={handleSummarize} 
-            disabled={isSummarizing}
+            disabled={saveSummaryMutation.isPending}
           >
-            {isSummarizing ? "Summarizing..." : note.summary ? "Show Summary" : "Summarize"}
+            {saveSummaryMutation.isPending ? "Summarizing..." : note.summary ? "Show Summary" : "Summarize"}
           </Button>
         )}
       </CardFooter>

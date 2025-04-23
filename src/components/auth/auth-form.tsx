@@ -1,4 +1,3 @@
-// src/components/auth/auth-form.tsx
 "use client"
 
 import * as React from "react"
@@ -6,7 +5,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Eye, EyeOff, Mail } from "lucide-react"
+import { Eye, EyeOff, Mail, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { cn } from "@/lib/utils"
@@ -68,6 +67,7 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
   const [showPassword, setShowPassword] = useState(false)
   const [activeTab, setActiveTab] = useState<string>("login")
   const [isLoading, setIsLoading] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -84,7 +84,7 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
     try {
       if (activeTab === "login") {
         // Sign in
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error, data } = await supabase.auth.signInWithPassword({
           email: values.email,
           password: values.password,
         })
@@ -92,6 +92,7 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
         if (error) throw error
         
         // Success, redirect to dashboard
+        toast.success("Signed in successfully!")
         router.push('/dashboard')
         router.refresh()
       } else {
@@ -103,27 +104,19 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
         
         if (error) throw error
         
-        toast.success("Account created! Please check your email to confirm your account.")
-
-        // toast({
-        //   title: "Account created!",
-        //   description: "Please check your email to confirm your account.",
-        // })
-        
-        // Switch to login tab
-        setActiveTab("login")
+        toast.success("Account created! Redirecting you to your dashboard.")
+        router.push('/dashboard')
       }
     } catch (error) {
       console.error('Authentication error:', error)
-      toast.error(error instanceof Error? error.message : "Failed to sign in")
-      setIsLoading(false)
+      toast.error(error instanceof Error ? error.message : "Failed to sign in")
     } finally {
       setIsLoading(false)
     }
   }
   
   async function handleGoogleSignIn() {
-    setIsLoading(true)
+    setIsGoogleLoading(true)
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -135,8 +128,8 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
       if (error) throw error
     } catch (error) {
       console.error('Google sign in error:', error)
-      toast.error(error instanceof Error? error.message : "Failed to sign in with Google")
-      setIsLoading(false)
+      toast.error(error instanceof Error ? error.message : "Failed to sign in with Google")
+      setIsGoogleLoading(false)
     }
   }
 
@@ -170,6 +163,7 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
                             placeholder="name@example.com" 
                             className="pl-10"
                             {...field} 
+                            disabled={isLoading || isGoogleLoading}
                           />
                         </div>
                       </FormControl>
@@ -189,6 +183,7 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
                             placeholder="••••••••" 
                             type={showPassword ? "text" : "password"} 
                             {...field} 
+                            disabled={isLoading || isGoogleLoading}
                           />
                           <Button
                             type="button"
@@ -196,6 +191,7 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
                             size="icon"
                             className="absolute right-0 top-0 h-full px-3 py-2"
                             onClick={() => setShowPassword(!showPassword)}
+                            disabled={isLoading || isGoogleLoading}
                           >
                             {showPassword ? (
                               <EyeOff className="h-4 w-4" />
@@ -212,8 +208,19 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Signing in..." : "Sign In"}
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading || isGoogleLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
                 </Button>
               </form>
             </Form>
@@ -237,6 +244,7 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
                             placeholder="name@example.com" 
                             className="pl-10"
                             {...field} 
+                            disabled={isLoading || isGoogleLoading}
                           />
                         </div>
                       </FormControl>
@@ -256,6 +264,7 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
                             placeholder="••••••••" 
                             type={showPassword ? "text" : "password"} 
                             {...field} 
+                            disabled={isLoading || isGoogleLoading}
                           />
                           <Button
                             type="button"
@@ -263,6 +272,7 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
                             size="icon"
                             className="absolute right-0 top-0 h-full px-3 py-2"
                             onClick={() => setShowPassword(!showPassword)}
+                            disabled={isLoading || isGoogleLoading}
                           >
                             {showPassword ? (
                               <EyeOff className="h-4 w-4" />
@@ -279,8 +289,19 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creating account..." : "Sign Up"}
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading || isGoogleLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Sign Up"
+                  )}
                 </Button>
               </form>
             </Form>
@@ -304,10 +325,19 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
         className="w-full"
         type="button"
         onClick={handleGoogleSignIn}
-        disabled={isLoading}
+        disabled={isLoading || isGoogleLoading}
       >
-        <GoogleLogo className="mr-2 h-4 w-4" />
-        Google
+        {isGoogleLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Connecting...
+          </>
+        ) : (
+          <>
+            <GoogleLogo className="mr-2 h-4 w-4" />
+            Google
+          </>
+        )}
       </Button>
     </div>
   )
