@@ -15,6 +15,14 @@ LucidNote is a modern note-taking application that combines rich text editing wi
     - [x] Add Gemini AI integration - AI summaries
 - [x] Add AI Study Feature
 - [x] Deploy to Vercel
+- [x] SEO
+   - [x] Robots.txt
+   - [x] Sitemap.xml
+   - [x] OpenGraph meta tags
+   - [x] Twitter meta tags
+   - [x] Manifest.json
+- [ ] Analytics
+
 
 ### 📝 Smart Notes
 - Create, edit, and organize notes in a clean, modern interface
