@@ -19,9 +19,9 @@ export default function HomePage() {
         <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-pink-300/40 rounded-full h-32 w-64 blur-2xl opacity-40 animate-[float_12s_ease-in-out_infinite]" style={{ animationDelay: "1.2s" }} />
         
         {/* Animated Icons */}
-        <Sparkles className="absolute top-36 left-10 text-primary w-12 h-12 opacity-70 animate-pulse" />
-        <Brain className="absolute top-56 right-14 text-pink-400 w-9 h-9 animate-[float_6s_ease-in-out_infinite]" />
-        <Brush className="absolute bottom-24 left-20 text-primary w-8 h-8 animate-[float_7s_ease-in-out_infinite]" style={{ animationDelay: "0.25s" }} />
+        <Sparkles className="hidden sm:block sm:absolute top-36 left-10 text-primary w-12 h-12 opacity-70 animate-pulse" />
+        <Brain className="hidden sm:block sm:absolute top-56 right-14 text-pink-400 w-9 h-9 animate-[float_6s_ease-in-out_infinite]" />
+        <Brush className="hidden sm:block sm:absolute bottom-24 left-20 text-primary w-8 h-8 animate-[float_7s_ease-in-out_infinite]" style={{ animationDelay: "0.25s" }} />
 
         <div className="max-w-3xl mx-auto relative z-10">
           <h1 className="text-6xl md:text-7xl font-extrabold text-foreground mb-6 drop-shadow-lg">
