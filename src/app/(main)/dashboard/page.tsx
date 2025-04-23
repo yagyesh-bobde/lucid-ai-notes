@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton"
+import Tiptap from "@/components/TipTap"
 
 export default function DashboardPage() {
   const [searchTerm, setSearchTerm] = useState("")

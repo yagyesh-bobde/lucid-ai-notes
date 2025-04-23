@@ -135,9 +135,9 @@ export function MainSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Recent Notes</SidebarGroupLabel>
           <SidebarGroupContent>
-            <Accordion type="single" collapsible className="w-full">
+            <Accordion defaultValue="recent-notes" type="single" collapsible className="w-full">
               <AccordionItem value="recent-notes" className="border-none">
-                <AccordionTrigger className="py-2 px-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md">
+                <AccordionTrigger defaultChecked className="py-2 px-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md">
                   <div className="flex items-center">
                     <Clock className="mr-2 h-4 w-4" />
                     Recent Notes

@@ -23,27 +23,10 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Note } from "@/lib/supabase/types"
 import { useCreateNote, useUpdateNote } from "@/hooks/use-notes"
-import { cn } from "@/lib/utils"
-import { 
-  Bold, 
-  Italic, 
-  Underline, 
-  List, 
-  ListOrdered,
-  Heading1,
-  Heading2,
-  Heading3,
-  Undo,
-  Redo,
-  Quote,
-  Code,
-  SquareCode,
-  Link,
-  Check
-} from "lucide-react"
+import { Loader2 } from "lucide-react"
+import Tiptap from "@/components/TipTap"
 
 // Form schema validation using zod
 const noteFormSchema = z.object({
@@ -61,41 +44,11 @@ interface NoteEditorProps {
   mode: 'create' | 'edit'
 }
 
-// Helper to insert formatting around selected text
-const insertFormatting = (
-  textareaEl: HTMLTextAreaElement,
-  beforeText: string,
-  afterText: string = beforeText
-) => {
-  const start = textareaEl.selectionStart
-  const end = textareaEl.selectionEnd
-  const selectedText = textareaEl.value.substring(start, end)
-  const beforeContent = textareaEl.value.substring(0, start)
-  const afterContent = textareaEl.value.substring(end)
-  
-  // Insert formatting
-  const newText = beforeContent + beforeText + selectedText + afterText + afterContent
-  
-  // Update value
-  textareaEl.value = newText
-  
-  // Set selection to just after the inserted text
-  const newCursorPos = start + beforeText.length + selectedText.length + afterText.length
-  textareaEl.setSelectionRange(newCursorPos, newCursorPos)
-  
-  // Focus the textarea
-  textareaEl.focus()
-  
-  // Dispatch input event to trigger react-hook-form update
-  const event = new Event('input', { bubbles: true })
-  textareaEl.dispatchEvent(event)
-}
-
 export function NoteEditorRich({ isOpen, onClose, onSuccess, note, mode }: NoteEditorProps) {
   const [isSaving, setIsSaving] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
   const createNoteMutation = useCreateNote()
   const updateNoteMutation = useUpdateNote()
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   
   // Initialize react-hook-form
   const form = useForm<NoteFormValues>({
@@ -105,6 +58,21 @@ export function NoteEditorRich({ isOpen, onClose, onSuccess, note, mode }: NoteE
       content: note?.content || "",
     },
   })
+
+  // Watch form values for changes
+  const formValues = form.watch()
+  
+  // Check for changes when form values update
+  useEffect(() => {
+    if (mode === 'edit' && note) {
+      const isDifferent = 
+        formValues.title !== note.title || 
+        formValues.content !== note.content
+      setHasChanges(isDifferent)
+    } else {
+      setHasChanges(true) // Always enabled in create mode
+    }
+  }, [formValues, note, mode])
   
   // Update form values when the note prop changes
   useEffect(() => {
@@ -146,126 +114,6 @@ export function NoteEditorRich({ isOpen, onClose, onSuccess, note, mode }: NoteE
       setIsSaving(false)
     }
   }
-  
-  // Formatting handlers
-  const formatBold = () => {
-    if (!textareaRef.current) return
-    insertFormatting(textareaRef.current, '**', '**')
-  }
-  
-  const formatItalic = () => {
-    if (!textareaRef.current) return
-    insertFormatting(textareaRef.current, '_', '_')
-  }
-  
-  const formatUnderline = () => {
-    if (!textareaRef.current) return
-    insertFormatting(textareaRef.current, '<u>', '</u>')
-  }
-  
-  const formatH1 = () => {
-    if (!textareaRef.current) return
-    insertFormatting(textareaRef.current, '# ', '')
-  }
-  
-  const formatH2 = () => {
-    if (!textareaRef.current) return
-    insertFormatting(textareaRef.current, '## ', '')
-  }
-  
-  const formatH3 = () => {
-    if (!textareaRef.current) return
-    insertFormatting(textareaRef.current, '### ', '')
-  }
-  
-  const formatBulletList = () => {
-    if (!textareaRef.current) return
-    const textarea = textareaRef.current
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const selectedText = textarea.value.substring(start, end)
-    
-    if (selectedText.includes('\n')) {
-      // Convert each line to bullet points
-      const lines = selectedText.split('\n')
-      const formattedText = lines.map(line => line ? `- ${line}` : line).join('\n')
-      
-      const beforeContent = textarea.value.substring(0, start)
-      const afterContent = textarea.value.substring(end)
-      textarea.value = beforeContent + formattedText + afterContent
-      
-      // Set selection to the end of the inserted text
-      const newCursorPos = start + formattedText.length
-      textarea.setSelectionRange(newCursorPos, newCursorPos)
-    } else {
-      insertFormatting(textarea, '- ', '')
-    }
-    
-    textarea.focus()
-    const event = new Event('input', { bubbles: true })
-    textarea.dispatchEvent(event)
-  }
-  
-  const formatNumberedList = () => {
-    if (!textareaRef.current) return
-    const textarea = textareaRef.current
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const selectedText = textarea.value.substring(start, end)
-    
-    if (selectedText.includes('\n')) {
-      // Convert each line to numbered list
-      const lines = selectedText.split('\n')
-      const formattedText = lines.map((line, index) => 
-        line ? `${index + 1}. ${line}` : line
-      ).join('\n')
-      
-      const beforeContent = textarea.value.substring(0, start)
-      const afterContent = textarea.value.substring(end)
-      textarea.value = beforeContent + formattedText + afterContent
-      
-      // Set selection to the end of the inserted text
-      const newCursorPos = start + formattedText.length
-      textarea.setSelectionRange(newCursorPos, newCursorPos)
-    } else {
-      insertFormatting(textarea, '1. ', '')
-    }
-    
-    textarea.focus()
-    const event = new Event('input', { bubbles: true })
-    textarea.dispatchEvent(event)
-  }
-  
-  const formatBlockquote = () => {
-    if (!textareaRef.current) return
-    insertFormatting(textareaRef.current, '> ', '')
-  }
-  
-  const formatInlineCode = () => {
-    if (!textareaRef.current) return
-    insertFormatting(textareaRef.current, '`', '`')
-  }
-  
-  const formatCodeBlock = () => {
-    if (!textareaRef.current) return
-    insertFormatting(textareaRef.current, '```\n', '\n```')
-  }
-  
-  const formatLink = () => {
-    if (!textareaRef.current) return
-    const textarea = textareaRef.current
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const selectedText = textarea.value.substring(start, end)
-    
-    const linkText = selectedText || 'Link text'
-    insertFormatting(textarea, `[${linkText}](`, ')')
-  }
-  
-  const formatChecklist = () => {
-    if (!textareaRef.current) return
-    insertFormatting(textareaRef.current, '- [ ] ', '')
-  }
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -300,143 +148,6 @@ export function NoteEditorRich({ isOpen, onClose, onSuccess, note, mode }: NoteE
                 )}
               />
               
-              {/* Formatting Toolbar */}
-              <div className="flex flex-wrap items-center gap-1 p-1 bg-muted/50 rounded-md border">
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatBold}
-                  title="Bold"
-                >
-                  <Bold className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatItalic}
-                  title="Italic"
-                >
-                  <Italic className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatUnderline}
-                  title="Underline"
-                >
-                  <Underline className="h-4 w-4" />
-                </Button>
-                <div className="w-px h-5 bg-border mx-1"></div>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatH1}
-                  title="Heading 1"
-                >
-                  <Heading1 className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatH2}
-                  title="Heading 2"
-                >
-                  <Heading2 className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatH3}
-                  title="Heading 3"
-                >
-                  <Heading3 className="h-4 w-4" />
-                </Button>
-                <div className="w-px h-5 bg-border mx-1"></div>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatBulletList}
-                  title="Bullet List"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatNumberedList}
-                  title="Numbered List"
-                >
-                  <ListOrdered className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatChecklist}
-                  title="Checklist"
-                >
-                  <Check className="h-4 w-4" />
-                </Button>
-                <div className="w-px h-5 bg-border mx-1"></div>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatBlockquote}
-                  title="Blockquote"
-                >
-                  <Quote className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatInlineCode}
-                  title="Inline Code"
-                >
-                  <Code className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatCodeBlock}
-                  title="Code Block"
-                >
-                  <SquareCode className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={formatLink}
-                  title="Link"
-                >
-                  <Link className="h-4 w-4" />
-                </Button>
-              </div>
-              
               <FormField
                 control={form.control}
                 name="content"
@@ -444,49 +155,40 @@ export function NoteEditorRich({ isOpen, onClose, onSuccess, note, mode }: NoteE
                   <FormItem>
                     <FormLabel>Content</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Write your note content here..." 
-                        className="min-h-[400px] resize-none font-mono text-base leading-relaxed"
-                        {...field} 
-                        ref={(e) => {
-                          field.ref(e)
-                          // @ts-ignore - we know this will be a textarea
-                          textareaRef.current = e
-                        }}
+                      <Tiptap 
+                        content={field.value} 
+                        onChange={field.onChange}
+                        placeholder="Write your note content here..."
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
-              <div className="text-sm text-muted-foreground">
-                <p>Formatting tips:</p>
-                <ul className="list-disc list-inside space-y-1 mt-1">
-                  <li><code>**bold**</code> for <strong>bold text</strong></li>
-                  <li><code>_italic_</code> for <em>italic text</em></li>
-                  <li><code># Heading</code> for headings</li>
-                  <li><code>- item</code> for bullet lists</li>
-                  <li><code>1. item</code> for numbered lists</li>
-                  <li><code>- [ ] task</code> for checklists</li>
-                  <li><code>`code`</code> for inline code</li>
-                </ul>
-              </div>
             </div>
             
             <SheetFooter className="px-6 py-4 border-t">
-              <div className="flex justify-between w-full">
-                <SheetClose asChild>
-                  <Button type="button" variant="outline">
-                    Cancel
-                  </Button>
-                </SheetClose>
-                <Button type="submit" disabled={isSaving || createNoteMutation.isPending || updateNoteMutation.isPending}>
-                  {isSaving || createNoteMutation.isPending || updateNoteMutation.isPending
-                    ? 'Saving...' 
-                    : 'Save Note'}
-                </Button>
-              </div>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose}
+                disabled={isSaving}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isSaving || (mode === 'edit' && !hasChanges)}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  mode === 'create' ? 'Create Note' : 'Save Changes'
+                )}
+              </Button>
             </SheetFooter>
           </form>
         </Form>

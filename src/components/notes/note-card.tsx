@@ -49,10 +49,18 @@ interface NoteCardProps {
   onDelete: (id: string) => void
 }
 
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle,
+} from "@/components/ui/sheet"
+
 export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
   const [showSummary, setShowSummary] = useState(!!note.summary)
   const [localSummary, setLocalSummary] = useState<string | null>(note.summary)
   const [isSummarizing, setIsSummarizing] = useState(false)
+  const [isReadViewOpen, setIsReadViewOpen] = useState(false)
   const saveSummaryMutation = useSaveSummary()
   const queryClient = useQueryClient()
   
@@ -77,8 +85,13 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
     setIsSummarizing(true)
     
     try {
+      // Extract plain text from HTML for summarization
+      const tempDiv = document.createElement('div')
+      tempDiv.innerHTML = note.content
+      const plainText = tempDiv.textContent || tempDiv.innerText || note.content
+      
       // Generate a new summary using Gemini
-      const result = await summarizeText(note.content, { maxLength: 75 })
+      const result = await summarizeText(plainText, { maxLength: 75 })
       
       if ('error' in result) {
         throw new Error(result.error)
@@ -121,53 +134,123 @@ export function NoteCard({ note, onEdit, onDelete }: NoteCardProps) {
   }
 
   return (
-    <Card className="h-full flex flex-col hover:shadow-md transition-shadow duration-200">
-      <CardHeader className="pb-2 flex flex-row justify-between items-start">
-        <CardTitle className="line-clamp-1 text-lg">{note.title}</CardTitle>
-        <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(note)}>
-            <Edit className="h-4 w-4" />
-            <span className="sr-only">Edit note</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-destructive hover:text-destructive"
-            onClick={() => onDelete(note.id)}
-          >
-            <Trash className="h-4 w-4" />
-            <span className="sr-only">Delete note</span>
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1">
-        {showSummary && localSummary ? (
-          <div className="space-y-4">
-            <div className="bg-secondary/50 p-3 rounded-md">
-              <h4 className="font-medium text-sm mb-1">AI Summary</h4>
-              <p className="text-sm">{localSummary}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => setShowSummary(false)}>
-              Show Original
+    <>
+      <Card 
+        className="h-full flex flex-col hover:shadow-md transition-shadow duration-200 cursor-pointer"
+        onClick={(e) => {
+          // Prevent opening read view when clicking buttons
+          if (
+            (e.target as HTMLElement).tagName === 'BUTTON' ||
+            (e.target as HTMLElement).closest('button')
+          ) {
+            return
+          }
+          setIsReadViewOpen(true)
+        }}
+      >
+        <CardHeader className="pb-2 flex flex-row justify-between items-start">
+          <CardTitle className="line-clamp-1 text-lg">{note.title}</CardTitle>
+          <div className="flex gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(note)}>
+              <Edit className="h-4 w-4" />
+              <span className="sr-only">Edit note</span>
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-destructive hover:text-destructive"
+              onClick={() => onDelete(note.id)}
+            >
+              <Trash className="h-4 w-4" />
+              <span className="sr-only">Delete note</span>
             </Button>
           </div>
-        ) : (
-          <p className="text-muted-foreground text-sm line-clamp-6 whitespace-pre-line">{note.content}</p>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between pt-2 pb-4 text-xs text-muted-foreground border-t">
-        <div>{getFormattedDate(note.updated_at)}</div>
-        {!showSummary && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSummarize} 
-            disabled={isSummarizing}
-          >
-            {isSummarizing ? "Summarizing..." : localSummary ? "Show Summary" : "Summarize"}
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+        </CardHeader>
+        <CardContent className="flex-1">
+          {showSummary && localSummary ? (
+            <div className="space-y-4">
+              <div className="bg-secondary/50 p-3 rounded-md">
+                <h4 className="font-medium text-sm mb-1">AI Summary</h4>
+                <p className="text-sm">{localSummary}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowSummary(false)}>
+                Show Original
+              </Button>
+            </div>
+          ) : (
+            <div className="text-muted-foreground text-sm line-clamp-6 prose prose-sm dark:prose-invert max-w-none">
+              <div 
+                dangerouslySetInnerHTML={{ __html: note.content }} 
+                className="[&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary/80"
+                onClick={(e) => {
+                  // Handle link clicks
+                  const target = e.target as HTMLElement;
+                  if (target.tagName === 'A') {
+                    e.preventDefault();
+                    const href = target.getAttribute('href');
+                    if (href) {
+                      window.open(href, '_blank');
+                    }
+                  }
+                }}
+              />
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="flex justify-between pt-2 pb-4 text-xs text-muted-foreground border-t">
+          <div>{getFormattedDate(note.updated_at)}</div>
+          {!showSummary && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSummarize} 
+              disabled={isSummarizing}
+            >
+              {isSummarizing ? "Summarizing..." : localSummary ? "Show Summary" : "Summarize"}
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
+
+      {/* Read-only View Sheet */}
+      <Sheet open={isReadViewOpen} onOpenChange={setIsReadViewOpen}>
+        <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto">
+          <SheetHeader className="mb-6">
+            <SheetTitle className="text-2xl">{note.title}</SheetTitle>
+            <div className="text-xs text-muted-foreground">
+              {getFormattedDate(note.updated_at)}
+            </div>
+          </SheetHeader>
+          
+          <div className="space-y-8">
+            {/* Note Content */}
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div 
+                dangerouslySetInnerHTML={{ __html: note.content }}
+                className="[&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary/80"
+                onClick={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (target.tagName === 'A') {
+                    e.preventDefault();
+                    const href = target.getAttribute('href');
+                    if (href) {
+                      window.open(href, '_blank');
+                    }
+                  }
+                }}
+              />
+            </div>
+            
+            {/* AI Summary Section */}
+            {note.summary && (
+              <div className="bg-secondary/50 p-4 rounded-lg">
+                <h4 className="font-medium text-sm mb-2">AI Summary</h4>
+                <p className="text-sm text-muted-foreground">{note.summary}</p>
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   )
-  }
+}
