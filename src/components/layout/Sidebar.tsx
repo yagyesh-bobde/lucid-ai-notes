@@ -34,6 +34,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useNotes } from "@/hooks/use-notes"
 import { useUser, useProfile, useAuth } from "@/hooks/use-auth"
 
+// Add to imports
+import { Book } from "lucide-react"
+
 export function MainSidebar() {
   const pathname = usePathname()
   const { data: user, isLoading: isUserLoading } = useUser()
@@ -116,7 +119,7 @@ export function MainSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
+              {/* <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
                   isActive={pathname === "/canvas"}
@@ -125,6 +128,18 @@ export function MainSidebar() {
                   <Link href="/canvas">
                     <Brush className="mr-2 h-4 w-4" />
                     Canvas
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem> */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === "/study"}
+                  tooltip="Study"
+                >
+                  <Link href="/study">
+                    <Book className="mr-2 h-4 w-4" />
+                    Study
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

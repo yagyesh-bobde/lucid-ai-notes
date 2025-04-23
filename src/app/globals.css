@@ -121,6 +121,13 @@
   }
 }
 
+@layer utilities{ 
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+}
+
 
 /* TipTap Editor Styles */
 .ProseMirror {
