@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+"use client"
+
+import React, { useState, useEffect } from "react"
+import { z } from "zod"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { 
   Dialog, 
   DialogContent, 
   DialogFooter, 
   DialogHeader, 
   DialogTitle 
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
@@ -17,29 +19,31 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Note, CreateNoteInput, UpdateNoteInput } from "@/lib/notes-service";
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Note, CreateNoteInput, UpdateNoteInput } from "@/lib/supabase/types"
+import { createNote, updateNote } from "@/lib/supabase/actions"
+import { toast } from "sonner"
 
 // Form schema validation using zod
 const noteFormSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }).max(100),
   content: z.string().min(1, { message: "Content is required" })
-});
+})
 
-type NoteFormValues = z.infer<typeof noteFormSchema>;
+type NoteFormValues = z.infer<typeof noteFormSchema>
 
 interface NoteEditorProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (data: CreateNoteInput | UpdateNoteInput) => Promise<void>;
-  note?: Note | null;
-  mode: 'create' | 'edit';
+  isOpen: boolean
+  onClose: () => void
+  onSuccess: () => void
+  note?: Note | null
+  mode: 'create' | 'edit'
 }
 
-export function NoteEditor({ isOpen, onClose, onSave, note, mode }: NoteEditorProps) {
-  const [isSaving, setIsSaving] = useState(false);
+export function NoteEditor({ isOpen, onClose, onSuccess, note, mode }: NoteEditorProps) {
+  const [isSaving, setIsSaving] = useState(false)
   
   // Initialize react-hook-form
   const form = useForm<NoteFormValues>({
@@ -48,7 +52,7 @@ export function NoteEditor({ isOpen, onClose, onSave, note, mode }: NoteEditorPr
       title: note?.title || "",
       content: note?.content || "",
     },
-  });
+  })
   
   // Update form values when the note prop changes
   useEffect(() => {
@@ -56,36 +60,48 @@ export function NoteEditor({ isOpen, onClose, onSave, note, mode }: NoteEditorPr
       form.reset({
         title: note.title,
         content: note.content
-      });
+      })
     } else {
       form.reset({
         title: "",
         content: ""
-      });
+      })
     }
-  }, [note, form]);
+  }, [note, form])
   
   // Handle form submission
   const handleSubmit = async (values: NoteFormValues) => {
+    setIsSaving(true)
     try {
-      setIsSaving(true);
-      
       if (mode === 'edit' && note) {
-        await onSave({
+        // Update existing note
+        const { error } = await updateNote({
           id: note.id,
           ...values
-        });
+        })
+        
+        if (error) throw new Error(error.message)
+        
+        toast.success("Note updated successfully")
       } else {
-        await onSave(values);
+        // Create new note
+        const { error } = await createNote(values)
+        
+        if (error) throw new Error(error.message)
+        
+        toast.success("Note created successfully")
       }
       
-      onClose();
+      // Notify parent component of success
+      onSuccess()
+      onClose()
     } catch (error) {
-      console.error("Error saving note:", error);
+      console.error("Error saving note:", error)
+      toast.error(error instanceof Error ? error.message : "Failed to save note")
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  };
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -143,5 +159,5 @@ export function NoteEditor({ isOpen, onClose, onSave, note, mode }: NoteEditorPr
         </Form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

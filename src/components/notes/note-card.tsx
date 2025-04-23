@@ -1,0 +1,155 @@
+"use client"
+
+import React, { useState } from "react"
+// Remove the import for formatRelativeTime since we'll define it in this file
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "sonner"
+import { Edit, Trash } from "lucide-react"
+import { Note } from "@/lib/supabase/types"
+import { summarizeText } from "@/lib/gemini/client"
+import { saveSummary } from "@/lib/supabase/actions"
+
+// Define the formatRelativeTime function here
+const formatRelativeTime = (date: Date): string => {
+  const now = new Date()
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+  
+  const minute = 60
+  const hour = minute * 60
+  const day = hour * 24
+  const week = day * 7
+  const month = day * 30
+  const year = day * 365
+  
+  if (diffInSeconds < minute) {
+    return 'just now'
+  } else if (diffInSeconds < hour) {
+    const minutes = Math.floor(diffInSeconds / minute)
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
+  } else if (diffInSeconds < day) {
+    const hours = Math.floor(diffInSeconds / hour)
+    return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
+  } else if (diffInSeconds < week) {
+    const days = Math.floor(diffInSeconds / day)
+    return `${days} ${days === 1 ? 'day' : 'days'} ago`
+  } else if (diffInSeconds < month) {
+    const weeks = Math.floor(diffInSeconds / week)
+    return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`
+  } else if (diffInSeconds < year) {
+    const months = Math.floor(diffInSeconds / month)
+    return `${months} ${months === 1 ? 'month' : 'months'} ago`
+  } else {
+    const years = Math.floor(diffInSeconds / year)
+    return `${years} ${years === 1 ? 'year' : 'years'} ago`
+  }
+}
+
+interface NoteCardProps {
+  note: Note
+  onEdit: (note: Note) => void
+  onDelete: (id: string) => void
+  onRefresh: () => void
+}
+
+export function NoteCard({ note, onEdit, onDelete, onRefresh }: NoteCardProps) {
+  const [isSummarizing, setIsSummarizing] = useState(false)
+  const [showSummary, setShowSummary] = useState(!!note.summary)
+  
+  // Format the date for display
+  const getFormattedDate = (dateString: string) => {
+    try {
+      return `Updated ${formatRelativeTime(new Date(dateString))}`;
+    } catch (error) {
+      return dateString;
+    }
+  }
+
+  const handleSummarize = async () => {
+    if (isSummarizing) return
+    
+    setIsSummarizing(true)
+    try {
+      // If we already have a saved summary, just display it
+      if (note.summary) {
+        setShowSummary(true)
+        return
+      }
+      
+      // Generate a new summary using Gemini
+      const result = await summarizeText(note.content, { maxLength: 75 })
+      
+      if ('error' in result) {
+        throw new Error(result.error)
+      }
+      
+      // Save the generated summary to the database
+      const { error } = await saveSummary(note.id, result.summary)
+      
+      if (error) {
+        throw new Error(error.message)
+      }
+      
+      // If successful, refresh the note list to get the updated note with summary
+      onRefresh()
+      setShowSummary(true)
+      
+    } catch (error) {
+      console.error("Error summarizing note:", error)
+      toast.error("Failed to generate summary. Please try again.")
+    } finally {
+      setIsSummarizing(false)
+    }
+  }
+
+  return (
+    <Card className="h-full flex flex-col hover:shadow-md transition-shadow duration-200">
+      <CardHeader className="pb-2 flex flex-row justify-between items-start">
+        <CardTitle className="line-clamp-1 text-lg">{note.title}</CardTitle>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(note)}>
+            <Edit className="h-4 w-4" />
+            <span className="sr-only">Edit note</span>
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-destructive hover:text-destructive"
+            onClick={() => onDelete(note.id)}
+          >
+            <Trash className="h-4 w-4" />
+            <span className="sr-only">Delete note</span>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-1">
+        {showSummary && note.summary ? (
+          <div className="space-y-4">
+            <div className="bg-secondary/50 p-3 rounded-md">
+              <h4 className="font-medium text-sm mb-1">AI Summary</h4>
+              <p className="text-sm">{note.summary}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setShowSummary(false)}>
+              Show Original
+            </Button>
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-sm line-clamp-6 whitespace-pre-line">{note.content}</p>
+        )}
+      </CardContent>
+      <CardFooter className="flex justify-between pt-2 pb-4 text-xs text-muted-foreground border-t">
+        <div>{getFormattedDate(note.updated_at)}</div>
+        {!showSummary && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSummarize} 
+            disabled={isSummarizing}
+          >
+            {isSummarizing ? "Summarizing..." : note.summary ? "Show Summary" : "Summarize"}
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
+  )
+}

@@ -1,24 +1,77 @@
+// src/components/layout/sidebar.tsx
+"use client"
 
-// Shadcn Sidebar with User Profile (avatar & email), links, and sign out
-
-import React from "react";
+import React from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { LogOut, StickyNote, Brush } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
-  Sidebar, SidebarContent, SidebarHeader, SidebarFooter,
-  SidebarGroup, SidebarGroupLabel, SidebarGroupContent,
-  SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-} from "@/components/ui/sidebar";
-import { useAuthProfile } from "@/hooks/useAuthProfile";
-import { LogOut, StickyNote, Brush } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useNavigate, useLocation } from "react-router-dom";
+  Sidebar as SidebarComponent,
+  SidebarContent,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarTrigger
+} from "@/components/ui/sidebar"
+import { signOut } from "@/lib/supabase/actions"
+import { createClient } from "@/lib/supabase/client"
+import { useEffect, useState } from "react"
 
+interface Profile {
+  username: string | null
+  avatar_url: string | null
+}
+
+// Sidebar component with navigation and user profile
 export function AppSidebar() {
-  const { user, profile, signOut } = useAuthProfile();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const pathname = usePathname()
+  const [user, setUser] = useState<any | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  // Fetch user and profile info
+  useEffect(() => {
+    const fetchUserAndProfile = async () => {
+      const supabase = createClient()
+      
+      // Get user session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setUser(session.user)
+        
+        // Fetch profile data if user is authenticated
+        const { data } = await supabase
+          .from("profiles")
+          .select("username, avatar_url")
+          .eq("id", session.user.id)
+          .single()
+        
+        setProfile(data)
+      }
+    }
+    
+    fetchUserAndProfile()
+  }, [])
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    setIsSigningOut(true)
+    try {
+      await signOut()
+    } catch (error) {
+      console.error("Error signing out:", error)
+      setIsSigningOut(false)
+    }
+  }
 
   return (
-    <Sidebar>
+    <SidebarComponent variant="inset" collapsible="icon">
       <SidebarHeader>
         <div className="flex flex-col justify-center items-center py-6">
           <img
@@ -32,29 +85,31 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Have fun</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  isActive={location.pathname === "/dashboard"}
+                  isActive={pathname === "/dashboard"}
+                  tooltip="Notes"
                 >
-                  <a href="/dashboard">
+                  <Link href="/dashboard">
                     <StickyNote className="mr-2" />
                     Notes
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  isActive={location.pathname === "/canvas"}
+                  isActive={pathname === "/canvas"}
+                  tooltip="Canvas"
                 >
-                  <a href="/canvas">
+                  <Link href="/canvas">
                     <Brush className="mr-2" />
                     Canvas
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -65,13 +120,14 @@ export function AppSidebar() {
         <Button
           variant="destructive"
           className="w-full"
-          onClick={signOut}
+          onClick={handleSignOut}
+          disabled={isSigningOut}
           aria-label="Sign Out"
         >
           <LogOut className="mr-2 w-4 h-4" />
-          Sign Out
+          {isSigningOut ? "Signing out..." : "Sign Out"}
         </Button>
       </SidebarFooter>
-    </Sidebar>
-  );
+    </SidebarComponent>
+  )
 }

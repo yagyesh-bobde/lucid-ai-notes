@@ -1,3 +1,5 @@
+"use client"
+// src/components/theme/theme-toggle.tsx
 
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
@@ -10,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+// Theme toggle component with dropdown for light/dark/system options
 export function ThemeToggle() {
   const { setTheme } = useTheme()
 

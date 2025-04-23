@@ -1,103 +1,70 @@
-import Image from "next/image";
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { StickyNote, Sparkles, Brain, Brush } from "lucide-react"
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen flex flex-col">
+      {/* Hero Section */}
+      <section className="relative flex-1 flex flex-col items-center justify-center bg-gradient-to-tr from-primary/40 to-secondary/80 py-32 px-4 text-center overflow-hidden">
+        {/* Theme toggle in the top right */}
+        <div className="absolute top-4 right-4 z-10">
+          <ThemeToggle />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        
+        {/* Decorative background gradients/animated blobs */}
+        <div className="absolute -top-20 -left-20 w-60 h-60 bg-gradient-to-br from-primary via-emerald-200 to-secondary rounded-full blur-2xl opacity-40 animate-[float_8s_ease-in-out_infinite]" />
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tr from-accent/60 via-secondary to-primary/30 rounded-full blur-2xl opacity-30 animate-[float_10s_ease-in-out_infinite]" style={{ animationDelay: "0.75s" }} />
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-pink-300/40 rounded-full h-32 w-64 blur-2xl opacity-40 animate-[float_12s_ease-in-out_infinite]" style={{ animationDelay: "1.2s" }} />
+        
+        {/* Animated Icons */}
+        <Sparkles className="absolute top-36 left-10 text-primary w-12 h-12 opacity-70 animate-pulse" />
+        <Brain className="absolute top-56 right-14 text-pink-400 w-9 h-9 animate-[float_6s_ease-in-out_infinite]" />
+        <Brush className="absolute bottom-24 left-20 text-primary w-8 h-8 animate-[float_7s_ease-in-out_infinite]" style={{ animationDelay: "0.25s" }} />
+
+        <div className="max-w-3xl mx-auto relative z-10">
+          <h1 className="text-6xl md:text-7xl font-extrabold text-foreground mb-6 drop-shadow-lg">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">LucidNote</span>
+          </h1>
+          
+          <p className="text-2xl md:text-3xl mb-8 text-foreground/80 font-light tracking-tight">
+            AI-Powered Notes & Creativity Platform
+            <span className="block text-lg md:text-xl text-muted-foreground mt-2">Declutter your mind. Summarize, doodle, remember.</span>
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 shadow-lg hover:shadow-xl transition-all">
+              <h3 className="text-lg font-semibold mb-2 flex items-center">
+                <StickyNote className="mr-2 text-primary" /> Smart Notes
+              </h3>
+              <p className="text-muted-foreground">Organize, edit & AI-summarize your thoughts in seconds.</p>
+            </div>
+            
+            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 shadow-lg hover:shadow-xl transition-all">
+              <h3 className="text-lg font-semibold mb-2 flex items-center">
+                <Brain className="mr-2 text-pink-500" /> AI Summaries
+              </h3>
+              <p className="text-muted-foreground">Instantly generate concise highlights for long notes.</p>
+            </div>
+            
+            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 shadow-lg hover:shadow-xl transition-all">
+              <h3 className="text-lg font-semibold mb-2 flex items-center">
+                <Brush className="mr-2 text-blue-400" /> Creative Canvas
+              </h3>
+              <p className="text-muted-foreground">Freehand draw, brainstorm, and visualize ideas anywhere.</p>
+            </div>
+          </div>
+          
+          <Button 
+            size="lg" 
+            className="text-lg px-8 py-6 shadow-md hover:shadow-xl transition-all"
+            asChild
+          >
+            <Link href="/auth">Get Started — It's Free</Link>
+          </Button>
+        </div>
+      </section>
     </div>
-  );
+  )
 }

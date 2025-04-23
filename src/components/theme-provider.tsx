@@ -1,24 +1,19 @@
+"use client"
+// src/components/theme/theme-provider.tsx
 
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
+import { type ThemeProviderProps } from "next-themes"
 
-interface ThemeProviderProps {
-  children: React.ReactNode;
-  defaultTheme?: string;
-  storageKey?: string;
-  enableSystem?: boolean;
-  enableColorScheme?: boolean;
-  disableTransitionOnChange?: boolean;
-}
-
+// Theme provider wrapper for Next.js
 export function ThemeProvider({ 
   children, 
-  defaultTheme = "system",
   ...props 
 }: ThemeProviderProps) {
   return (
-    <NextThemesProvider defaultTheme={defaultTheme} {...props}>
+    <NextThemesProvider {...props}>
       {children}
     </NextThemesProvider>
   )
 }
+
