@@ -118,14 +118,20 @@ export function AuthForm({ className, ...props }: React.HTMLAttributes<HTMLDivEl
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: true, // Prevent automatic redirect
         },
       })
       
       if (error) throw error
+      
+      // Manually redirect to the authorization URL
+      if (data?.url) {
+        window.location.href = data.url
+      }
     } catch (error) {
       console.error('Google sign in error:', error)
       toast.error(error instanceof Error ? error.message : "Failed to sign in with Google")

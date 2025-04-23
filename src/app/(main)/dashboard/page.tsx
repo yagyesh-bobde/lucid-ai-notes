@@ -121,10 +121,13 @@ export default function DashboardPage() {
   )
   
   return (
-    <div className="">
+    // Add pb-16 class for mobile to account for bottom navigation
+    <div className="pb-16 lg:pb-0">
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Your Notes</h2>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+        </div>
       </div>
 
        {/* Delete Confirmation Dialog */}

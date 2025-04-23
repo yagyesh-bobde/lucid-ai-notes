@@ -20,7 +20,7 @@ export default async function MainLayout({
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <MainSidebar />
-        <main className="flex-1 md:p-12 p-4 md:pl-54 overflow-y-auto bg-background">
+        <main className="flex-1 md:p-12 p-4 lg:pl-68 overflow-y-auto bg-background">
           {children}
         </main>
       </div>
